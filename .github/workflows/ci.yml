@@ -1,0 +1,92 @@
+# ─────────────────────────────────────────────────────────────
+# NEX-CELL CI PIPELINE
+# Runs on every push to main and every pull request.
+#
+# Steps:
+#   1. Install dependencies (cached)
+#   2. Type-check (tsc --noEmit)
+#   3. Lint (eslint)
+#   4. Build (next build)
+#
+# If all pass → Vercel auto-deploys (via its GitHub integration).
+# If any fail → deployment is blocked. No broken code reaches prod.
+# ─────────────────────────────────────────────────────────────
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs when a new commit is pushed
+# Saves CI minutes and avoids stale deployments
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Type check, lint & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Node.js setup ─────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # ── Install dependencies ───────────────────────────────
+      # Uses npm ci (not npm install) for reproducible installs
+      # Reads exact versions from package-lock.json
+      - name: Install dependencies
+        run: npm ci
+
+      # ── Type check ────────────────────────────────────────
+      # tsc --noEmit: checks types without emitting any files
+      # This catches TypeScript errors that eslint might miss
+      - name: TypeScript type check
+        run: npm run type-check
+
+      # ── Lint ──────────────────────────────────────────────
+      - name: ESLint
+        run: npm run lint
+
+      # ── Build ─────────────────────────────────────────────
+      # Full Next.js production build
+      # Catches any runtime import errors, missing env vars used at build time, etc.
+      # We use dummy env vars so the build doesn't crash on missing secrets
+      - name: Build (production)
+        run: npm run build
+        env:
+          # Dummy values — build-time only, never used in real requests
+          DATABASE_URL:               "postgresql://user:pass@localhost/nexcell"
+          JWT_ACCESS_SECRET:          "ci-dummy-access-secret-64-bytes-long-xxxxxxxxxxxxxxxxxxxxxxxxxx"
+          JWT_REFRESH_SECRET:         "ci-dummy-refresh-secret-64-bytes-long-xxxxxxxxxxxxxxxxxxxxxxxxx"
+          CSRF_SECRET:                "ci-dummy-csrf-secret-32-bytes-xxxx"
+          UPSTASH_REDIS_REST_URL:     "https://dummy.upstash.io"
+          UPSTASH_REDIS_REST_TOKEN:   "ci-dummy-token"
+          RESEND_API_KEY:             "re_dummy_key"
+          RESEND_FROM_EMAIL:          "onboarding@resend.dev"
+          CLOUDINARY_CLOUD_NAME:      "dummy"
+          CLOUDINARY_API_KEY:         "dummy"
+          CLOUDINARY_API_SECRET:      "dummy"
+          NEXT_PUBLIC_APP_URL:        "https://nexcell.vercel.app"
+          NEXT_PUBLIC_APP_NAME:       "NexCell"
+          NODE_ENV:                   "production"
+
+      # ── Success summary ───────────────────────────────────
+      - name: CI passed
+        run: |
+          echo "✅ Type check passed"
+          echo "✅ Lint passed"
+          echo "✅ Build passed"
+          echo "🚀 Safe to deploy"

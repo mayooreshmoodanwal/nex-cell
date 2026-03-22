@@ -43,7 +43,7 @@
     "nanoid": "5.0.9",
     "next": "^15.3.1",
     "react": "18.3.1",
-"react-dom": "18.3.1",
+    "react-dom": "18.3.1",
     "react-email": "3.0.4",
     "react-hook-form": "7.54.2",
     "resend": "4.1.2",
@@ -57,7 +57,7 @@
     "@tailwindcss/typography": "0.5.16",
     "@types/node": "22.10.7",
     "@types/react": "18.3.20",
-"@types/react-dom": "18.3.5",
+    "@types/react-dom": "18.3.5",
     "@typescript-eslint/eslint-plugin": "8.20.0",
     "@typescript-eslint/parser": "8.20.0",
     "autoprefixer": "10.4.20",
@@ -70,5 +70,11 @@
     "tsx": "4.19.2",
     "typescript": "5.7.3"
   },
+
+  "overrides": {
+  "@types/react": "18.3.20",
+  "@types/react-dom": "18.3.5"
+},
+
   "engines": { "node": "20.x" }
 }
